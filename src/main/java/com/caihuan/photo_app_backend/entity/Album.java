@@ -1,0 +1,34 @@
+package com.caihuan.photo_app_backend.entity;
+
+import jakarta.persistence.*;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.UUID;
+
+/**
+ * @Author nanako
+ * @Date 2025/7/31
+ * @Description 相册实体类
+ */
+@Entity
+@Table(name = "albums")
+@Data
+@NoArgsConstructor
+public class Album {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String name;
+    private Long userId;
+    private String shareToken;
+
+    @PrePersist
+    private void prePersist() {
+        if (shareToken == null) {
+            shareToken = UUID.randomUUID().toString();
+        }
+    }
+}
