@@ -1,4 +1,4 @@
-package com.caihuan.photo_app_backend.security.services;
+package com.caihuan.photo_app_backend.services;
 
 import com.caihuan.photo_app_backend.entity.User;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -7,7 +7,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 import java.util.Objects;
 
 /**

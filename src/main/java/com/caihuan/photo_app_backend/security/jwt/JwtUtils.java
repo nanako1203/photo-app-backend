@@ -1,7 +1,6 @@
 package com.caihuan.photo_app_backend.security.jwt;
 
-import com.caihuan.photo_app_backend.entity.User;
-import com.caihuan.photo_app_backend.security.services.UserDetailsImpl;
+import com.caihuan.photo_app_backend.services.UserDetailsImpl;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;

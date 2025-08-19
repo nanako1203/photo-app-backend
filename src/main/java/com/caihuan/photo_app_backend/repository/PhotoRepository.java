@@ -11,5 +11,11 @@ import java.util.List;
  * @Description 照片仓库
  */
 public interface PhotoRepository extends JpaRepository<Photo, Long> {
+
+    // 根据相册ID查找该相册下的所有照片
     List<Photo> findByAlbumId(long albumId);
+
+    // 根据相册ID，查找该相册下所有被客户标记为“喜欢”的照片
+    List<Photo> findByAlbumIdAndIsLikedByClientTrue(Long albumId);
+
 }

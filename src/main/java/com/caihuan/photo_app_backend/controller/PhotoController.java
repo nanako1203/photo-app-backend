@@ -2,7 +2,7 @@ package com.caihuan.photo_app_backend.controller;
 
 import com.caihuan.photo_app_backend.entity.Photo;
 import com.caihuan.photo_app_backend.repository.PhotoRepository;
-import com.caihuan.photo_app_backend.security.services.S3Service;
+import com.caihuan.photo_app_backend.services.S3Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.List;
 
 /**
  * @Author nanako
@@ -27,8 +28,22 @@ public class PhotoController {
     @Autowired
     private PhotoRepository photoRepository;
 
+    //获取指定相册所有照片
+    @GetMapping("/album/{albumId}")//{albumId}路径变量 用实际id替换
+    public ResponseEntity<List<Photo>> getPhotosByAlbumId(@PathVariable Long albumId) {
+        List<Photo> photos = photoRepository.findByAlbumId(albumId);
+        return ResponseEntity.ok(photos);
+    }
+
+    //获取指定相册所有被客户点赞的照片
+    @GetMapping("album/{albumId}/liked")
+    public ResponseEntity<List<Photo>> getLikedPhotosByAlbum(@PathVariable Long albumId) {
+        List<Photo> likedPhotos = photoRepository.findByAlbumIdAndIsLikedByClientTrue(albumId);
+        return ResponseEntity.ok(likedPhotos);
+    }
+
     //@PathVariable捕获「albumId」的值并赋值给albumId @RequestParam接收从前端上传的文件，MultipartFile封装文件数据的标准类型
-    @PostMapping("/upload/{albumId")
+    @PostMapping("/upload/{albumId}")
     public ResponseEntity<?> uploadPhoto(@PathVariable Long albumId, @RequestParam("file") MultipartFile file) {
         try {
             //上传到aws并返回公开访问地址

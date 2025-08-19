@@ -1,4 +1,4 @@
-package com.caihuan.photo_app_backend.security.services;
+package com.caihuan.photo_app_backend.services;
 
 import com.caihuan.photo_app_backend.entity.User;
 import com.caihuan.photo_app_backend.repository.UserRepository;

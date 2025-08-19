@@ -6,7 +6,7 @@ import com.caihuan.photo_app_backend.payload.request.RegisterRequest;
 import com.caihuan.photo_app_backend.payload.response.JwtResponse;
 import com.caihuan.photo_app_backend.repository.UserRepository;
 import com.caihuan.photo_app_backend.security.jwt.JwtUtils;
-import com.caihuan.photo_app_backend.security.services.UserDetailsImpl;
+import com.caihuan.photo_app_backend.services.UserDetailsImpl;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;

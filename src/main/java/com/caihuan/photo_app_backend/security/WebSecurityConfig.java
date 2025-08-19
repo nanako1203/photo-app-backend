@@ -2,7 +2,7 @@ package com.caihuan.photo_app_backend.security;
 
 import com.caihuan.photo_app_backend.security.jwt.AuthEntryPointJwt;
 import com.caihuan.photo_app_backend.security.jwt.AuthTokenFilter;
-import com.caihuan.photo_app_backend.security.services.UserDetailssServiceImpl;
+import com.caihuan.photo_app_backend.services.UserDetailssServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

@@ -25,7 +25,7 @@ public class Album {
     private Long userId;
     private String shareToken;
 
-    @PrePersist
+    @PrePersist//// JPA生命周期注解：在对象第一次被保存到数据库之前，会自动执行下面的方法
     private void prePersist() {
         if (shareToken == null) {
             shareToken = UUID.randomUUID().toString();
