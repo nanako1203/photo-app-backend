@@ -99,5 +99,6 @@ public class PhotoController {
                 }
             }
         }
+        return ResponseEntity.ok(results);
     }
 }
