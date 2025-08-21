@@ -49,7 +49,32 @@ public class PhotoController {
         return ResponseEntity.ok(likedPhotos);
     }
 
-    //@PathVariable捕获「albumId」的值并赋值给albumId @RequestParam接收从前端上传的文件，MultipartFile封装文件数据的标准类型
+    //删除一张照片
+    @DeleteMapping("/{photoId}")
+    public ResponseEntity<String> deletePhoto(@PathVariable Long photoId) {
+        Optional<Photo> photoData = photoRepository.findById(photoId);
+        if (photoData.isPresent()) {
+            Photo photo = photoData.get();
+            try {
+                s3Service.deleteFile(photo.getStorageUrl());
+                if (photo.getStorageUrl() != null) {
+                    s3Service.deleteFile(photo.getFinalStorageUrl());
+                }
+                photoRepository.deleteById(photoId);
+                return ResponseEntity.ok().body("照片删除成功");
+            }catch (Exception e) {
+
+                e.printStackTrace();
+                return ResponseEntity.status(500).body("照片删除失败");
+            }
+
+        }else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    //web端直接上传
+    // @PathVariable捕获「albumId」的值并赋值给albumId @RequestParam接收从前端上传的文件，MultipartFile封装文件数据的标准类型
     @PostMapping("/upload/{albumId}")
     public ResponseEntity<?> uploadPhoto(@PathVariable Long albumId, @RequestParam("file") MultipartFile file) {
         try {
