@@ -15,7 +15,7 @@ import org.springframework.stereotype.Service;
  * @Description security情报官 查找数据库用户详细情报
  */
 @Service
-public class UserDetailssServiceImpl implements UserDetailsService {
+public class UserDetailsServiceImpl implements UserDetailsService {
     @Autowired
     UserRepository userRepository;
 

@@ -2,7 +2,7 @@ package com.caihuan.photo_app_backend.security;
 
 import com.caihuan.photo_app_backend.security.jwt.AuthEntryPointJwt;
 import com.caihuan.photo_app_backend.security.jwt.AuthTokenFilter;
-import com.caihuan.photo_app_backend.services.UserDetailssServiceImpl;
+import com.caihuan.photo_app_backend.services.UserDetailsServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -16,6 +16,13 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.filter.CorsFilter;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * @Author nanako
@@ -27,7 +34,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableWebSecurity //更细粒度的方法级别安全控制
 public class WebSecurityConfig {
     @Autowired
-    UserDetailssServiceImpl userDetailssService;
+    UserDetailsServiceImpl userDetailsService;
 
     //未登录用户访问受保护资源请求
     @Autowired
@@ -43,7 +50,7 @@ public class WebSecurityConfig {
     @Bean
     public DaoAuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-        authProvider.setUserDetailsService(userDetailssService);
+        authProvider.setUserDetailsService(userDetailsService);
         authProvider.setPasswordEncoder(passwordEncoder());
         return authProvider;
     }
@@ -55,26 +62,39 @@ public class WebSecurityConfig {
     }
 
     //比对密码
-    private PasswordEncoder passwordEncoder() {
+    @Bean
+    public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        //禁用了CSRF（跨站请求伪造）保护
-        http.csrf(csrf -> csrf.disable())
-                //认证失败处理
-                .exceptionHandling(exception -> exception.authenticationEntryPoint(unauthorizedHandler))
-                //会话管理策略为STATELESS
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                //允许所有对 /api/auth/ 路径（即登录和注册）的访问，不需要通行证
-                .authorizeHttpRequests(auth -> auth.requestMatchers("/api/auth/**").permitAll()
-                //除此之外的任何其他请求，都必须经过认证（必须持有有效的通行证）
-                .anyRequest().authenticated());
 
-        //当需要验证用户身份时，请使用我们自己定制的‘认证专家
+
+    @Bean
+    public CorsFilter corsFilter() {
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowCredentials(true);
+        config.setAllowedOrigins(Arrays.asList("http://localhost:5173","http://localhost:5174","http://localhost:5175")); // 允许您的前端地址
+        config.setAllowedHeaders(Arrays.asList("Origin", "Content-Type", "Accept", "Authorization"));
+        config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        source.registerCorsConfiguration("/**", config);
+        return new CorsFilter(source);
+    }
+
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        http.csrf(csrf -> csrf.disable())
+                .exceptionHandling(exception -> exception.authenticationEntryPoint(unauthorizedHandler))
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth ->
+                        auth.requestMatchers("/api/auth/**").permitAll()
+                                .requestMatchers("/api/albums/share/**").permitAll() // 允许客户免登录访问分享链接
+                                .anyRequest().authenticated()
+                );
+
         http.authenticationProvider(authenticationProvider());
-        ////将自定义的AuthTokenFilter（安检过滤器）安插在标准的用户名密码认证过滤器之前
         http.addFilterBefore(authenticationJwtTokenFilter(), UsernamePasswordAuthenticationFilter.class);
+
         return http.build();
     }
 }
