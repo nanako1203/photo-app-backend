@@ -34,6 +34,12 @@ private int jwtExpirationMs;
 
 //为成功登录的用户生成JWT
 public String generateJwtToken(Authentication authentication) {
+
+    // 【在这里添加日志】
+
+    logger.info("====================================================");
+    logger.info("JWT Secret Key being used: " + this.jwtSecret);
+    logger.info("====================================================");
     //获取对象信息
     UserDetailsImpl userPrincipal = (UserDetailsImpl) authentication.getPrincipal();
     return Jwts.builder()//构建通行证

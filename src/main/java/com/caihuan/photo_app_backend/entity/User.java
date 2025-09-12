@@ -4,6 +4,9 @@ import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.HashSet;
+import java.util.Set;
+
 /**
  * @Author nanako
  * @Date 2025/7/31
@@ -21,4 +24,12 @@ public class User {
     private String username;
     private String email;
     private String password;
+
+    // --- 新增代码开始 ---
+    @ManyToMany(fetch = FetchType.EAGER) // 使用 EAGER 模式，方便加载用户时直接获取角色
+    @JoinTable(name = "user_roles",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "role_id"))
+    private Set<Role> roles = new HashSet<>();
+    // --- 新增代码结束 ---
 }

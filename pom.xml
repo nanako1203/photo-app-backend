@@ -7,7 +7,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.3.2</version> <!-- 使用一个稳定且存在的Spring Boot版本 -->
+        <version>3.3.2</version>
         <relativePath/>
     </parent>
 
@@ -18,30 +18,14 @@
     <description>Backend service for photo management application</description>
 
     <properties>
-        <java.version>22</java.version>
-        <!-- 【修正】增加了缺失的版本号定义 -->
-        <spring-cloud-gcp.version>5.2.1</spring-cloud-gcp.version>
-        <spring-cloud.version>2023.0.1</spring-cloud.version>
+        <!-- 【优化】Spring Boot 3.3.x 官方支持的LTS版本是Java 21，更稳定 -->
+        <java.version>21</java.version>
         <aws.sdk.version>2.20.43</aws.sdk.version>
     </properties>
 
-    <!-- 这个dependencyManagement板块会自动管理所有云服务库的版本，解决了版本缺失的问题 -->
     <dependencyManagement>
         <dependencies>
-            <dependency>
-                <groupId>org.springframework.cloud</groupId>
-                <artifactId>spring-cloud-dependencies</artifactId>
-                <version>${spring-cloud.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-            <dependency>
-                <groupId>com.google.cloud</groupId>
-                <artifactId>spring-cloud-gcp-dependencies</artifactId>
-                <version>${spring-cloud-gcp.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
+            <!-- 【移除】删除了冲突的 Spring Cloud 和 GCP 依赖管理包 -->
             <dependency>
                 <groupId>software.amazon.awssdk</groupId>
                 <artifactId>bom</artifactId>
@@ -78,7 +62,7 @@
             <scope>runtime</scope>
         </dependency>
 
-        <!-- JWT Support (【修正】删除了重复的部分) -->
+        <!-- JWT Support -->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-api</artifactId>
@@ -97,19 +81,21 @@
             <scope>runtime</scope>
         </dependency>
 
-        <!-- AWS S3 SDK for Java v2 (版本由dependencyManagement管理) -->
+        <!-- AWS S3 SDK for Java v2 -->
         <dependency>
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>s3</artifactId>
         </dependency>
 
-        <!-- Google Cloud Vision AI Client Library (版本由dependencyManagement管理) -->
+        <!-- Google Cloud Vision AI Client Library -->
         <dependency>
             <groupId>com.google.cloud</groupId>
             <artifactId>google-cloud-vision</artifactId>
+            <!-- 【新增】为独立依赖显式指定版本，确保稳定性 -->
+            <version>3.40.0</version>
         </dependency>
 
-        <!-- Lombok (【修正】删除了重复的部分) -->
+        <!-- Lombok -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>

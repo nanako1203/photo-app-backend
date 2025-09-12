@@ -17,12 +17,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * @Author nanako
- * @Date 2025/8/12
- * @Description 照片控制器
- */
-
 @RestController
 @RequestMapping("/api/photos")
 @CrossOrigin(origins = "*", maxAge = 3600)
@@ -35,12 +29,24 @@ public class PhotoController {
     @Autowired
     private ImageAnalysisService imageAnalysisService;
 
-    //获取指定相册所有照片
-    @GetMapping("/album/{albumId}")//{albumId}路径变量 用实际id替换
-    public ResponseEntity<List<Photo>> getPhotosByAlbumId(@PathVariable Long albumId) {
-        List<Photo> photos = photoRepository.findByAlbumId(albumId);
-        return ResponseEntity.ok(photos);
+    // --- 这里是修改过的方法 ---
+    @GetMapping("/album/{albumId}")
+    public ResponseEntity<?> getPhotosByAlbumId(@PathVariable Long albumId) {
+        try {
+            // 这行是你的原始代码
+            List<Photo> photos = photoRepository.findByAlbumId(albumId);
+            return ResponseEntity.ok(photos);
+        } catch (Exception e) {
+            // 如果上面的代码出现任何异常，我们会在这里捕获它
+            System.out.println("!!!!!!!!!!!!!! 捕获到真正的异常 !!!!!!!!!!!!!!");
+            e.printStackTrace(); // 在控制台打印出完整的、真正的错误堆栈信息
+            // 返回一个 500 错误，并附带真实的错误消息
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("获取照片列表时发生内部错误: " + e.getMessage());
+        }
     }
+    // --- 修改结束 ---
+
 
     //获取指定相册所有被客户点赞的照片
     @GetMapping("album/{albumId}/liked")
@@ -74,7 +80,6 @@ public class PhotoController {
     }
 
     //web端直接上传
-    // @PathVariable捕获「albumId」的值并赋值给albumId @RequestParam接收从前端上传的文件，MultipartFile封装文件数据的标准类型
     @PostMapping("/upload/{albumId}")
     public ResponseEntity<?> uploadPhoto(@PathVariable Long albumId, @RequestParam("file") MultipartFile file) {
         try {

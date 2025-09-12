@@ -6,10 +6,9 @@ import com.caihuan.photo_app_backend.repository.CommentRepository;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 /**
  * @Author nanako
@@ -26,6 +25,7 @@ public class CommentController {
     private CommentRepository commentRepository;
 
     //获取一张照片下的所有评论
+    @PostMapping
     public ResponseEntity<Comment> addCommentToPhoto  (@PathVariable Long photoId, @Valid CommentRequest commentRequest) {
         Comment comment = new Comment();
         comment.setPhotoId(photoId);
@@ -33,6 +33,13 @@ public class CommentController {
         comment.setContent(commentRequest.getContent());
         Comment savedComment = commentRepository.save(comment);
         return ResponseEntity.ok(savedComment);
+    }
+
+    // [新增] 获取一张照片下的所有评论
+    @GetMapping // <--- 添加这个
+    public ResponseEntity<List<Comment>> getCommentsForPhoto(@PathVariable Long photoId) {
+        List<Comment> comments = commentRepository.findByPhotoId(photoId);
+        return ResponseEntity.ok(comments);
     }
 
 }

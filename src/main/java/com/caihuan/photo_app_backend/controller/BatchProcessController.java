@@ -27,6 +27,7 @@ public class BatchProcessController {
     private BatchProcessService batchProcessService;
 
     //接收并处理批量上传的数字档案
+    @PostMapping("/sync/{albumId}")
     public ResponseEntity<?> sysArchives(@PathVariable Long albumId, @RequestBody List<PhotoArchiveDto> archives) {
 
             try {

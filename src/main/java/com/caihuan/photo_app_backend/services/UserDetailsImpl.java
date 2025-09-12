@@ -3,11 +3,13 @@ package com.caihuan.photo_app_backend.services;
 import com.caihuan.photo_app_backend.entity.User;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
-import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * @Author nanako
@@ -16,36 +18,49 @@ import java.util.Objects;
  */
 public class UserDetailsImpl implements UserDetails {
 
-    //
-    private static final long serialVersionUID = 1L;//序列化版本号
+    private static final long serialVersionUID = 1L;
 
     private Long id;
     private String username;
     private String email;
 
-    @JsonIgnore//反馈给前端的数据不打包密码
+    @JsonIgnore
     private String password;
 
-    public UserDetailsImpl(Long id, String username, String email, String password) {
+    // --- 新增字段，用于存储用户的权限 ---
+    private Collection<? extends GrantedAuthority> authorities;
+
+    // --- 修改构造函数，接收权限列表 ---
+    public UserDetailsImpl(Long id, String username, String email, String password,
+                           Collection<? extends GrantedAuthority> authorities) {
         this.id = id;
         this.username = username;
         this.email = email;
         this.password = password;
+        this.authorities = authorities;
     }
 
-    //将一个从数据库查出来的 User 对象，转换成一个 UserDetailsImpl 对象
+    // --- 修改 build 方法，从 User 对象中提取角色并转换为权限 ---
     public static UserDetailsImpl build(User user) {
-        return new UserDetailsImpl(user.getId(),
+        List<GrantedAuthority> authorities = user.getRoles().stream()
+                .map(role -> new SimpleGrantedAuthority(role.getName().name()))
+                .collect(Collectors.toList());
+
+        return new UserDetailsImpl(
+                user.getId(),
                 user.getUsername(),
                 user.getEmail(),
-                user.getPassword());
+                user.getPassword(),
+                authorities); // 传入转换后的权限列表
     }
 
-    //返回用户的权限列表（比如“管理员”、“普通用户”等）。
+    // --- 修改 getAuthorities 方法，返回真实的权限列表 ---
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return Collections.emptyList();
+        return authorities;
     }
+
+    // --- 以下代码保持不变 ---
 
     public Long getId() {
         return id;
@@ -65,36 +80,31 @@ public class UserDetailsImpl implements UserDetails {
         return username;
     }
 
-    //账号是否过期
     @Override
     public boolean isAccountNonExpired() {
         return true;
     }
 
-    //账号是否锁定
     @Override
     public boolean isAccountNonLocked() {
         return true;
     }
 
-    //凭证是否过期
     @Override
     public boolean isCredentialsNonExpired() {
         return true;
     }
 
-    //账号是否可用
     @Override
     public boolean isEnabled() {
         return true;
     }
 
     @Override
-    public boolean equals(Object o){
-        if (this == o) {return true;}
-        if (o == null || getClass() != o.getClass() ) {return false;}
+    public boolean equals(Object o) {
+        if (this == o) { return true; }
+        if (o == null || getClass() != o.getClass()) { return false; }
         UserDetailsImpl user = (UserDetailsImpl) o;
         return Objects.equals(id, user.id);
     }
-
 }

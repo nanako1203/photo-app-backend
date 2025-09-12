@@ -23,6 +23,7 @@ public class BatchProcessService {
     @Autowired
     private S3Service s3Service;
 
+    @Autowired
     private PhotoRepository photoRepository;
 
     @Transactional(rollbackFor = Exception.class)
