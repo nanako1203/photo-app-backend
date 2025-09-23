@@ -1,8 +1,12 @@
 package com.caihuan.photo_app_backend.controller;
 
 import com.caihuan.photo_app_backend.entity.Album;
+import com.caihuan.photo_app_backend.entity.Photo;
+import com.caihuan.photo_app_backend.payload.response.SharedAlbumResponse;
 import com.caihuan.photo_app_backend.payload.request.AlbumRequest;
 import com.caihuan.photo_app_backend.repository.AlbumRepository;
+import com.caihuan.photo_app_backend.repository.PhotoRepository;
+import com.caihuan.photo_app_backend.services.PhotoService;
 import com.caihuan.photo_app_backend.services.UserDetailsImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -26,6 +30,13 @@ public class AlbumController {
 
     @Autowired
     private AlbumRepository albumRepository;
+
+    // 【新增】注入 PhotoRepository 以便查询照片
+    @Autowired
+    private PhotoRepository photoRepository;
+
+    @Autowired
+    private PhotoService photoService; // 注入 PhotoService
 
     //获取当前登录用户的所有相册
     @GetMapping
@@ -54,10 +65,14 @@ public class AlbumController {
         return ResponseEntity.ok(savedAlbum);
     }
 
-    //通过分享链接获取公开相册信息
-    @GetMapping("/share/{shareToken}")
-    public ResponseEntity<Album> getShareAlbum(@PathVariable String shareToken) {
-        Optional<Album> albumData = albumRepository.findByShareToken(shareToken);
-        return albumData.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+    @PostMapping("/{albumId}/analyze")
+    public ResponseEntity<?> startAlbumAnalysis(@PathVariable Long albumId) {
+        // 调用异步服务方法
+        photoService.analyzePhotosInAlbum(albumId);
+
+        // 立即返回，告诉前端任务已接受
+        return ResponseEntity.accepted().body("相册分析任务已开始处理");
     }
+
+
 }

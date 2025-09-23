@@ -3,14 +3,7 @@ package com.caihuan.photo_app_backend.entity;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
 import java.time.Instant;
-
-/**
- * @Author nanako
- * @Date 2025/8/13
- * @Description 评论类
- */
 
 @Entity
 @Table(name = "comments")
@@ -18,27 +11,27 @@ import java.time.Instant;
 @NoArgsConstructor
 public class Comment {
 
-    //评论id
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // 这条评论所属照片的ID
-    private Long photoId;
+    // 【推荐修改】使用 @ManyToOne 进行对象关联
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "photo_id", nullable = false)
+    private Photo photo;
 
-    // 评论者姓名
-    private String contentName;
+    // 【推荐修改】将字段重命名为 commenterName 以保持一致
+    private String commenterName;
 
-    //评论
     @Lob
     private String content;
 
-    private Instant createAt;
+    private Instant createdAt; // 将 createAt 改为 createdAt 是更标准的驼峰命名
 
     @PrePersist
     public void prePersist() {
-        if (createAt == null) {
-            createAt = Instant.now();
+        if (createdAt == null) {
+            createdAt = Instant.now();
         }
     }
 }

@@ -1,5 +1,6 @@
 package com.caihuan.photo_app_backend.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -15,6 +16,8 @@ import java.util.UUID;
 @Table(name = "albums")
 @Data
 @NoArgsConstructor
+// 【重要】请确保添加了这个注解
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Album {
 
     @Id

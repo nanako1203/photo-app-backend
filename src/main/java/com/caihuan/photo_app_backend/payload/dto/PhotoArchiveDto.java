@@ -1,5 +1,6 @@
 package com.caihuan.photo_app_backend.payload.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;
 
 import java.util.Map;
@@ -11,6 +12,7 @@ import java.util.Map;
  */
 
 @Data
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class PhotoArchiveDto {
     // 原始文件名
     private String originalFileName;
@@ -26,4 +28,10 @@ public class PhotoArchiveDto {
     private boolean isOverExposed;
     // 照片所在的本地文件夹名
     private String localCategory;
+    // 添加下面这个字段
+    private String pHash;
+
+    // 【请在这里新增下面这个字段】
+    private String previewBase64;
+    // =======================================================
 }

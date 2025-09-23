@@ -1,5 +1,6 @@
 package com.caihuan.photo_app_backend.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -16,6 +17,7 @@ import java.util.Set;
 @Table(name = "users")
 @Data
 @NoArgsConstructor
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"}) // <-- 添加在这里
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

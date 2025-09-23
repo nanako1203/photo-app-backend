@@ -18,4 +18,7 @@ public interface PhotoRepository extends JpaRepository<Photo, Long> {
     // 根据相册ID，查找该相册下所有被客户标记为“喜欢”的照片
     List<Photo> findByAlbumIdAndIsLikedByClientTrue(Long albumId);
 
+    // 【新增】根据相册ID和分析状态查找照片
+    List<Photo> findByAlbumIdAndCloudAnalyzedIsFalse(Long albumId);
+
 }
