@@ -11,7 +11,7 @@ import software.amazon.awssdk.services.rekognition.model.*;
 
 import javax.annotation.PostConstruct;
 import java.io.IOException;
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -23,69 +23,43 @@ public class ImageAnalysisService {
     private final RekognitionClient rekognitionClient;
     private static final Logger logger = LoggerFactory.getLogger(ImageAnalysisService.class);
 
-    // 从 application.properties 注入您的S3存储桶名称
     @Value("${AWS_S3_BUCKET_NAME}")
     private String bucketName;
+
     @PostConstruct
     public void init() {
         logger.info("初始化 ImageAnalysisService... 读取到的 S3 桶名是: '{}'", bucketName);
-        if (bucketName == null || bucketName.isEmpty()) {
-            logger.error("严重错误: S3 桶名未能从配置中加载！请检查 application.properties 中的 AWS_S3_BUCKET_NAME 配置！");
-        }
     }
 
-    /**
-     * 【全新方法】让 Rekognition 直接从 S3 分析图片，取代旧的 analyzeImageBytes 方法
-     * @param objectKey S3 中对象的 Key (也即文件名)
-     * @return 包含所有分析结果的 ImageAnalysisResponse 对象
-     */
-
-    // 请使用这个最终修正版的完整方法
     public ImageAnalysisResponse analyzeImageFromS3(String objectKey) throws IOException {
         try {
-            // 1. 构建 Image 对象 (不变)
-            S3Object s3Object = S3Object.builder()
-                    .bucket(bucketName)
-                    .name(objectKey)
-                    .build();
+            S3Object s3Object = S3Object.builder().bucket(bucketName).name(objectKey).build();
             Image imageToAnalyze = Image.builder().s3Object(s3Object).build();
 
-            // 2. 使用我们验证过的【简化版】请求来检测标签
+            // API请求部分保持不变
             DetectLabelsRequest labelsRequest = DetectLabelsRequest.builder()
                     .image(imageToAnalyze)
-                    .maxLabels(10)
-                    .minConfidence(75F)
-                    .build();
+                    .maxLabels(20) // 增加标签数量以提高分类准确性
+                    .minConfidence(70F).build();
 
-            // 3. 构建人脸检测请求 (不变)
             DetectFacesRequest facesRequest = DetectFacesRequest.builder()
                     .image(imageToAnalyze)
-                    .attributes(Attribute.ALL)
-                    .build();
+                    .attributes(Attribute.ALL).build();
 
-            // 4. 构建文字检测请求 (不变)
             DetectTextRequest textRequest = DetectTextRequest.builder().image(imageToAnalyze).build();
 
-            // 5. 重新启用所有的AWS API调用
-            logger.info("向 AWS 发送 DetectLabelsRequest (S3 模式): {}", objectKey);
             DetectLabelsResponse labelsResponse = rekognitionClient.detectLabels(labelsRequest);
-
-            logger.info("向 AWS 发送 DetectFacesRequest (S3 模式): {}", objectKey);
             DetectFacesResponse facesResponse = rekognitionClient.detectFaces(facesRequest);
-
-            logger.info("向 AWS 发送 DetectTextRequest (S3 模式): {}", objectKey);
             DetectTextResponse textResponse = rekognitionClient.detectText(textRequest);
 
-            // 6. 从各个响应中提取所需数据
-            List<String> labels = labelsResponse.labels().stream()
-                    .map(Label::name)
-                    .collect(Collectors.toList());
+            // --- 数据提取与全新分类逻辑 ---
 
-            // 【重大修正】移除对 sharpness 和 brightness 的获取
-            // Double sharpness = null;
-            // Double brightness = null;
+            List<Label> rawLabels = labelsResponse.labels();
+            List<String> labelNames = rawLabels.stream().map(Label::name).collect(Collectors.toList());
 
-            // 【重大修正】修正 textDetections() 的拼写错误
+            // 【核心升级】调用全新的多维度分类方法
+            List<String> categories = classifyPhoto(rawLabels, textResponse.textDetections());
+
             String detectedText = textResponse.textDetections().stream()
                     .filter(td -> td.type() == TextTypes.LINE && td.confidence() > 75F)
                     .map(TextDetection::detectedText)
@@ -94,26 +68,18 @@ public class ImageAnalysisService {
             List<FaceDetail> faceDetails = facesResponse.faceDetails();
             Integer faceCount = faceDetails.size();
             boolean allFacesSmiling = !faceDetails.isEmpty() && faceDetails.stream()
-                    .allMatch(face -> {
-                        Smile smile = face.smile();
-                        return smile != null && smile.value() && smile.confidence() > 80F;
-                    });
+                    .allMatch(face -> face.smile() != null && face.smile().value());
             boolean allEyesOpen = !faceDetails.isEmpty() && faceDetails.stream()
                     .allMatch(face -> face.eyesOpen() != null && face.eyesOpen().value());
 
-            String sceneCategory = classifySceneFromLabels(labels);
-
-            // 7. 构建并返回最终的响应对象 (已移除 sharpness 和 brightness)
+            // 返回给PhotoService的数据结构，增加了categories列表
             return ImageAnalysisResponse.builder()
-                    .labels(labels)
+                    .labels(labelNames)       // 返回原始标签列表
+                    .categories(categories)   // 【新增】返回计算出的分类列表
                     .detectedText(detectedText)
-                    // .sharpness(sharpness) // 移除
-                    // .brightness(brightness) // 移除
                     .faceCount(faceCount)
                     .allFacesSmiling(allFacesSmiling)
                     .allEyesOpen(allEyesOpen)
-                    .sceneCategory(sceneCategory)
-                    .dominantColors(Collections.emptyList()) // 主色调也暂时移除
                     .build();
 
         } catch (RekognitionException e) {
@@ -122,21 +88,51 @@ public class ImageAnalysisService {
         }
     }
 
-    private String classifySceneFromLabels(List<String> labels) {
+    /**
+     * 【全新多维度分类方法】
+     * 根据标签和文字，为照片打上多个分类标签
+     * @param labels AWS返回的原始Label对象列表
+     * @param textDetections AWS返回的文字检测结果
+     * @return 一个包含所有匹配分类的字符串列表
+     */
+    private List<String> classifyPhoto(List<Label> labels, List<TextDetection> textDetections) {
         Set<String> labelSet = labels.stream()
-                .map(String::toLowerCase)
+                .map(label -> label.name().toLowerCase())
                 .collect(Collectors.toSet());
-        if (labelSet.contains("close-up") || labelSet.contains("macro photography")){
-            return "特写";
+
+        List<String> categories = new ArrayList<>();
+
+        // --- 维度一: 内容主题 ---
+        if (labelSet.contains("person") || labelSet.contains("face") || labelSet.contains("portrait")) categories.add("人像");
+        if (labelSet.contains("landscape") || labelSet.contains("nature") || labelSet.contains("sky") || labelSet.contains("mountain") || labelSet.contains("sea")) categories.add("风景");
+        if (labelSet.contains("architecture") || labelSet.contains("building") || labelSet.contains("cityscape")) categories.add("建筑");
+        if (labelSet.contains("animal") || labelSet.contains("pet") || labelSet.contains("dog") || labelSet.contains("cat") || labelSet.contains("bird")) categories.add("动物");
+        if (labelSet.contains("food") || labelSet.contains("dining") || labelSet.contains("dessert") || labelSet.contains("drink") || labelSet.contains("restaurant")) categories.add("美食");
+        if (labelSet.contains("car") || labelSet.contains("vehicle") || labelSet.contains("train") || labelSet.contains("airplane") || labelSet.contains("boat") || labelSet.contains("bicycle")) categories.add("交通工具");
+        if (labelSet.contains("flower") || labelSet.contains("plant") && !labelSet.contains("potted plant")) categories.add("自然细节");
+        if (labelSet.contains("sports") || labelSet.contains("stadium") || labelSet.contains("soccer") || labelSet.contains("basketball")) categories.add("体育运动");
+
+        // --- 维度二: 事件与场合 ---
+        if (labelSet.contains("party") || labelSet.contains("celebration") || labelSet.contains("birthday cake") || labelSet.contains("balloons") || labelSet.contains("confetti")) categories.add("派对与庆祝");
+        if (labelSet.contains("concert") || labelSet.contains("stage") || labelSet.contains("performance") || labelSet.contains("crowd") || labelSet.contains("musical instrument")) categories.add("演出活动");
+        if (labelSet.contains("fireworks")) categories.add("节日烟火");
+        if (labelSet.contains("christmas tree")) categories.add("节日");
+
+
+        // --- 维度三: 照片属性与用途 ---
+        // 通过检测到的文字数量和标签来判断
+        boolean hasSignificantText = textDetections.stream().anyMatch(td -> td.type() == TextTypes.LINE);
+        if (hasSignificantText && (labelSet.contains("text") || labelSet.contains("document") || labelSet.contains("paper") || labelSet.contains("screenshot") || labelSet.contains("receipt"))) {
+            categories.add("文档与截图");
         }
-        if (labelSet.contains("portrait") || labelSet.contains("person") || labelSet.contains("face")){
-            return "人像";
+        if (labelSet.contains("monochrome") || labelSet.contains("black and white")) categories.add("黑白照片");
+        if (labelSet.contains("panorama")) categories.add("全景照片");
+
+        // 如果没有任何特定分类，则归为“其他”
+        if (categories.isEmpty()) {
+            categories.add("其他");
         }
-        if (labelSet.contains("landscape") || labelSet.contains("sky") || labelSet.contains("mountain")
-                || labelSet.contains("sea") || labelSet.contains("nature")){
-            return "风景";
-        }
-        return "静物/其他";
+
+        return categories;
     }
 }
-

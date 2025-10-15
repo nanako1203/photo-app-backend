@@ -1,22 +1,20 @@
 package com.caihuan.photo_app_backend.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
-/**
- * @Author nanako
- * @Date 2025/7/31
- * @Description 相册实体类
- */
 @Entity
 @Table(name = "albums")
 @Data
 @NoArgsConstructor
-// 【重要】请确保添加了这个注解
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Album {
 
@@ -25,10 +23,33 @@ public class Album {
     private Long id;
 
     private String name;
-    private Long userId;
+
     private String shareToken;
 
-    @PrePersist//// JPA生命周期注解：在对象第一次被保存到数据库之前，会自动执行下面的方法
+    // =======================================================
+    // ==           【新增】与 User 实体的关联              ==
+    // =======================================================
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id") // 这会创建一个 user_id 外键列
+    @JsonIgnore // 在序列化Album时，避免无限循环
+    @ToString.Exclude // 避免Lombok的toString方法导致无限循环
+    private User user;
+
+    // =======================================================
+    // ==           【新增】与 Photo 实体的关联             ==
+    // =======================================================
+    @OneToMany(
+            mappedBy = "album",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true,
+            fetch = FetchType.LAZY
+    )
+    @JsonIgnore // 通常在获取相册列表时，我们不需要同时加载所有照片
+    @ToString.Exclude
+    private List<Photo> photos = new ArrayList<>();
+
+
+    @PrePersist
     private void prePersist() {
         if (shareToken == null) {
             shareToken = UUID.randomUUID().toString();

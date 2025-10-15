@@ -1,5 +1,6 @@
 package com.caihuan.photo_app_backend.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference; // 【新增】导入这个注解
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -15,18 +16,17 @@ public class Comment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // 【推荐修改】使用 @ManyToOne 进行对象关联
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "photo_id", nullable = false)
+    @JsonBackReference // 【新增】添加这个注解来防止序列化循环
     private Photo photo;
 
-    // 【推荐修改】将字段重命名为 commenterName 以保持一致
     private String commenterName;
 
     @Lob
     private String content;
 
-    private Instant createdAt; // 将 createAt 改为 createdAt 是更标准的驼峰命名
+    private Instant createdAt;
 
     @PrePersist
     public void prePersist() {

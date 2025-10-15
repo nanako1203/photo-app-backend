@@ -27,7 +27,9 @@ import java.time.Duration;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * @Author nanako
@@ -226,5 +228,40 @@ public class S3Service {
         // 4. 直接返回 Key
         return key;
     }
+
+    /**
+     * 批量从S3删除对象。
+     * @param keysToDelete 要删除的对象的Key列表。
+     */
+    public void deleteObjects(List<String> keysToDelete) {
+        if (keysToDelete == null || keysToDelete.isEmpty()) {
+            logger.info("要删除的对象Key列表为空，无需操作。");
+            return;
+        }
+
+        try {
+            List<ObjectIdentifier> objectIdentifiers = keysToDelete.stream()
+                    .map(key -> ObjectIdentifier.builder().key(key).build())
+                    .collect(Collectors.toList());
+
+            Delete deleteRequestPayload = Delete.builder()
+                    .objects(objectIdentifiers)
+                    .quiet(false)
+                    .build();
+
+            DeleteObjectsRequest deleteObjectsRequest = DeleteObjectsRequest.builder()
+                    .bucket(bucketName)
+                    .delete(deleteRequestPayload)
+                    .build();
+
+            s3Client.deleteObjects(deleteObjectsRequest);
+            logger.info("成功向S3提交了批量删除请求，共 {} 个对象。", keysToDelete.size());
+
+        } catch (Exception e) {
+            logger.error("批量删除S3对象时发生错误", e);
+            throw new RuntimeException("批量删除S3对象时发生错误", e);
+        }
+    }
+
 }
 

@@ -4,23 +4,18 @@ import lombok.Builder;
 import lombok.Data;
 import java.util.List;
 
-/**
- * @Author nanako
- * @Date 2025/9/13
- * @Description 用于封装AI分析结果并返回给前端的DTO（已合并AWS Rekognition功能）
- */
 @Data
 @Builder
 public class ImageAnalysisResponse {
+    // 【升级】返回一个分类列表
+    private List<String> categories;
+
     // --- 原有字段 ---
-    private String sceneCategory;
     private List<String> labels;
     private String detectedText;
-    private List<String> dominantColors;
+    // private List<String> dominantColors; // 新的Service中已移除，可以注释掉
 
-    // --- 【新增】来自 Rekognition 的新字段 ---
-    //private Double sharpness;
-    //private Double brightness;
+    // --- 来自 Rekognition 的新字段 ---
     private Integer faceCount;
     private boolean allFacesSmiling;
     private boolean allEyesOpen;
